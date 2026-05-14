@@ -1,4 +1,3 @@
-import pytest
 from autorouting import Router, Route, MatchedRoute
 
 
