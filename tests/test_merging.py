@@ -1,4 +1,7 @@
+import re
+import pytest
 from autorouting import Router, Route, MatchedRoute
+from autorouting.url import RouteURL
 
 
 def test_union():
@@ -101,3 +104,14 @@ def test_inplace_union():
             ]
         }
     }
+
+
+def test_union_named():
+    router1 = Router()
+    router2 = Router()
+
+    router1.add("path/to/{var:digit}", "GET", "component A", name="A")
+    router2.add("/path", "GET", "component A", name="A")
+
+    with pytest.raises(NameError):
+        router1 | router2

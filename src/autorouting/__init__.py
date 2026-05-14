@@ -53,36 +53,6 @@ class RouteGroup(UserDict[str, list[Route]]):
             key=lambda r: (-r.priority, -len(r.requirements))
         )
 
-    def __or__(self, other) -> 'RouteGroup':
-        router = self.__class__(other.name or self.name)
-        for key, routes in self.items():
-            router[key] = [*routes]
-        for key, routes in other.items():
-            if key in router:
-                for route in routes:
-                    if route not in router[key]:
-                        router[key].append(route)
-                router[key].sort(
-                    key=lambda r: (-r.priority, -len(r.requirements))
-                )
-            else:
-                router[key] = [*other[key]]
-        return router
-
-    def __ior__(self, other: 'Router') -> 'Router':
-        self.name = other.name or self.name
-        for key, routes in other.items():
-            if key in self:
-                for route in other[key]:
-                    if route not in self[key]:
-                        self[key].append(route)
-                self[key].sort(
-                    key=lambda r: (-r.priority, -len(r.requirements))
-                )
-            else:
-                self[key] = [*other[key]]
-        return self
-
 
 class Router(dict[str, RouteGroup]):
 
@@ -199,34 +169,32 @@ class Router(dict[str, RouteGroup]):
 
     def __or__(self, other) -> 'Router':
         router = self.__class__()
-        for path, group in self.items():
-            router[path] = RouteGroup(group.name, {
-                namespace: [*routes]
-                for namespace, routes in group.items()
-            })
-        for path, group in other.items():
-            if path in router:
-                router[path] |= group
-            else:
-                router[path] = RouteGroup(group.name, {
-                    namespace: [*routes]
-                    for namespace, routes in group.items()
-                    if (not self.allowed_namespaces or
-                        namespace in self.allowed_namespaces)
-                })
+        for merger in (self, other):
+            for path, group in merger.items():
+                for namespace, routes in group.items():
+                    for route in routes:
+                        router.add(
+                            path,
+                            namespace,
+                            route.component,
+                            name=group.name,
+                            requirements=route.requirements,
+                            priority=route.priority
+                        )
         return router
 
     def __ior__(self, other: 'Router') -> 'Router':
         if self._routes is not None:
             raise ImmutabilityError('Router is finalized.')
         for path, group in other.items():
-            if path in self:
-                self[path] |= group
-            else:
-                self[path] = RouteGroup(group.name, {
-                    namespace: [*routes]
-                    for namespace, routes in group.items()
-                    if (not self.allowed_namespaces or
-                        namespace in self.allowed_namespaces)
-                })
+            for namespace, routes in group.items():
+                for route in routes:
+                    self.add(
+                        path,
+                        namespace,
+                        route.component,
+                        name=group.name,
+                        requirements=route.requirements,
+                        priority=route.priority
+                    )
         return self

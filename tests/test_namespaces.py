@@ -31,37 +31,8 @@ def test_namespace_diverging_union():
     router2.add("path/to/{var}", "GET", "component B")
     router2.add("/not_http", "WHATEVER", "component D")
 
-    router3 = router1 | router2
-    assert dict(router3) == {
-        'path/to/{var:digit}': {
-            'GET': [
-                Route(
-                    component='component A',
-                    requirements={},
-                    priority=0
-                )
-            ]
-        },
-        'path/to/{var}': {
-            'GET': [
-                Route(
-                    component='component B',
-                    requirements={},
-                    priority=0
-                )
-            ]
-        },
-        'download/{name:path}': {
-            'GET': [
-                Route(
-                    component='component C',
-                    requirements={},
-                    priority=0
-                )
-            ]
-        },
-        '/not_http': {}
-    }
+    with pytest.raises(ValueError):
+        router1 | router2
 
 
 def test_inplace_diverging_union():
