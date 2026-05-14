@@ -1,109 +1,115 @@
 import pytest
-from autorouting import Router, Route, MatchedRoute
+from autorouting import Router, Route
 
 
-def test_no_priority():
-    router = Router()
-    router.add('/whatever', 'GET', 'Component 1')
-    router.add('/whatever', 'GET', 'Component 2')
+class HTTPRouter(Router):
 
-    router.finalize()
-    route = router.get("/whatever", "GET")
-    assert route == MatchedRoute(
-        path='/whatever',
-        namespace='GET',
-        component='Component 1',
-        params={}
+    allowed_namespaces = (
+        "GET", "HEAD", "PUT", "DELETE", "PATCH", "POST", "OPTIONS"
     )
 
-    routes = list(router.match("/whatever", "GET"))
-    assert routes == [
-       MatchedRoute(
-           path='/whatever',
-           namespace='GET',
-           component='Component 1',
-           params={}
-       ),
-        MatchedRoute(
-           path='/whatever',
-            namespace='GET',
-            component='Component 2',
-            params={}
-        ),
-    ]
 
+def test_namespace_unknown():
+    router = HTTPRouter()
 
-def test_priority():
-    router = Router()
-    router.add('/whatever', 'GET', 'Component 1')
-    router.add('/whatever', 'GET', 'Component 2', priority=1)
-    router.add('/whatever', 'GET', 'Component 3')
+    with pytest.raises(ValueError) as exc:
+        router.add("/not_http", "WHATEVER", "component D")
 
-    router.finalize()
-    route = router.get("/whatever", "GET")
-    assert route == MatchedRoute(
-        path='/whatever',
-        namespace='GET',
-        component='Component 2',
-        params={}
+    assert str(exc.value) == (
+        "Unknown namespace: WHATEVER. Expected one of "
+        "('GET', 'HEAD', 'PUT', 'DELETE', 'PATCH', 'POST', 'OPTIONS')"
     )
 
-    routes = list(router.match("/whatever", "GET"))
-    assert routes == [
-        MatchedRoute(
-            path='/whatever',
-            namespace='GET',
-            component='Component 2',
-            params={}
-        ),
-        MatchedRoute(
-            path='/whatever',
-            namespace='GET',
-            component='Component 1',
-            params={}
-        ),
-        MatchedRoute(
-           path='/whatever',
-            namespace='GET',
-            component='Component 3',
-            params={}
-        ),
-    ]
+
+def test_namespace_diverging_union():
+    router1 = HTTPRouter()
+    router2 = Router()
+
+    router1.add("path/to/{var:digit}", "GET", "component A")
+    router1.add("download/{name:path}", "GET", "component C")
+
+    router2.add("path/to/{var}", "GET", "component B")
+    router2.add("/not_http", "WHATEVER", "component D")
+
+    router3 = router1 | router2
+    assert dict(router3) == {
+        'path/to/{var:digit}': {
+            'GET': [
+                Route(
+                    component='component A',
+                    requirements={},
+                    priority=0
+                )
+            ]
+        },
+        'path/to/{var}': {
+            'GET': [
+                Route(
+                    component='component B',
+                    requirements={},
+                    priority=0
+                )
+            ]
+        },
+        'download/{name:path}': {
+            'GET': [
+                Route(
+                    component='component C',
+                    requirements={},
+                    priority=0
+                )
+            ]
+        },
+        '/not_http': {}
+    }
 
 
-def test_competing_priority():
-    router = Router()
-    router.add('/whatever', 'GET', 'Component 1', priority=2)
-    router.add('/whatever', 'GET', 'Component 2', priority=1)
-    router.add('/whatever', 'GET', 'Component 3', priority=99)
+def test_inplace_diverging_union():
+    router1 = Router()
+    router2 = Router()
 
-    router.finalize()
-    route = router.get("/whatever", "GET")
-    assert route == MatchedRoute(
-        path='/whatever',
-        namespace='GET',
-        component='Component 3',
-        params={}
-    )
+    router1.add("path/to/{var:digit}", "GET", "component A")
+    router1.add("download/{name:path}", "GET", "component C")
 
-    routes = list(router.match("/whatever", "GET"))
-    assert routes == [
-        MatchedRoute(
-            path='/whatever',
-            namespace='GET',
-            component='Component 3',
-            params={}
-        ),
-        MatchedRoute(
-            path='/whatever',
-            namespace='GET',
-            component='Component 1',
-            params={}
-        ),
-        MatchedRoute(
-           path='/whatever',
-            namespace='GET',
-            component='Component 2',
-            params={}
-        ),
-    ]
+    router2.add("path/to/{var}", "GET", "component B")
+    router2.add("/not_http", "WHATEVER", "component D")
+
+    router2 |= router1
+    assert dict(router2) == {
+        'path/to/{var:digit}': {
+            'GET': [
+                Route(
+                    component='component A',
+                    requirements={},
+                    priority=0
+                )
+            ]
+        },
+        'path/to/{var}': {
+            'GET': [
+                Route(
+                    component='component B',
+                    requirements={},
+                    priority=0
+                )
+            ]
+        },
+        'download/{name:path}': {
+            'GET': [
+                Route(
+                    component='component C',
+                    requirements={},
+                    priority=0
+                )
+            ]
+        },
+        '/not_http': {
+            'WHATEVER': [
+                Route(
+                    component='component D',
+                    requirements={},
+                    priority=0
+                )
+            ]
+        }
+    }
