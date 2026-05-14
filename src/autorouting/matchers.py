@@ -3,7 +3,7 @@ from hamcrest.core.base_matcher import BaseMatcher
 from hamcrest.core.description import Description
 
 
-class match_wildcards(BaseMatcher):
+class Wildcard(BaseMatcher):
 
     def __init__(self, value: str):
         self.value: str = value
