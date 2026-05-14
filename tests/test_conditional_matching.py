@@ -1,8 +1,7 @@
 import fnmatch
 from autorouting import Router
 from autorouting.matchers import Wildcard
-from hamcrest.core.core.isequal import IsEqual
-
+from hamcrest import equal_to
 
 
 router = Router()
@@ -13,7 +12,7 @@ router.add("path/to/{var}", 'GET', 'component A',
 router.add("path/to/{var}", 'GET', 'component B',
            requirements={
                'name': Wildcard('f*'),
-               'user': IsEqual('admin')
+               'user': equal_to('admin')
            })
 
 router.add("path/to/{var}", 'GET', 'component C')

@@ -114,15 +114,20 @@ class Router(dict[str, RouteGroup]):
         if requirements is None:
             requirements = {}
         route = Route(component, frozendict(requirements), priority=priority)
+
         if path not in self:
-            if name and name in self._names:
-                raise NameError(f"Name {name!r} is already in use.")
+            if name:
+                if name in self._names:
+                    raise NameError(f"Name {name!r} is already in use.")
+                self._names.add(name)
             group = self[path] = RouteGroup(name)
             group.add(namespace, route)
         else:
             if self[path].name is None:
-                if name and name in self._names:
-                    raise NameError(f"Name {name!r} is already in use.")
+                if name:
+                    if name in self._names:
+                        raise NameError(f"Name {name!r} is already in use.")
+                    self._names.add(name)
                 self[path].name = name
             elif self[path].name != name:
                 raise NameError(
@@ -172,6 +177,8 @@ class Router(dict[str, RouteGroup]):
             routes.close()
 
     def get_by_name(self, name: str) -> RouteURL | None:
+        if self._routes is None:
+            raise NotImplementedError('Router was not finalized.')
         return self._routes._byname.get(name)
 
     def finalize(self):
