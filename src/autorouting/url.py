@@ -1,8 +1,8 @@
 import re
+from urllib.parse import urlencode
 from typing import NamedTuple
 from functools import partial
 from autoroutes import MATCH_TYPES, PATTERNS
-from urllib.parse import urlencode
 
 
 SLUGS = re.compile('{([^:}]+):?(.*?)}')
@@ -18,12 +18,12 @@ def extract_slugs(url: str):
         if name in slugs:
             raise NameError(f'Duplicate variable name in url: {name}.')
         if matcher in MATCH_TYPES:
-            type = matcher
+            type_ = matcher
             pattern = PATTERNS[MATCH_TYPES[matcher]]
         else:
-            type = 'regexp'
+            type_ = 'regexp'
             pattern = matcher
-        slugs[name] = (type, re.compile(f'^{pattern}$'))
+        slugs[name] = (type_, re.compile(f'^{pattern}$'))
     return slugs
 
 
@@ -36,13 +36,13 @@ class RouteURL(NamedTuple):
         for name, matcher in self.slugs.items():
             if name not in values:
                 raise KeyError(f'Missing URL variable: {name}.')
-            type, pattern = matcher
+            type_, pattern = matcher
             value = values.pop(name)
             if not pattern.match(str(value)):
-                if type != 'regexp':
+                if type_ != 'regexp':
                     raise ValueError(
                         f'Param {name!r} of wrong type. '
-                        f'Expected value of {type!r} type.'
+                        f'Expected value of {type_!r} type.'
                     )
                 raise ValueError(
                     f'{name!r} param does not match pattern {pattern!r}.'

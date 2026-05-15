@@ -1,4 +1,4 @@
-from collections.abc import Iterable
+from collections.abc import Collection
 from typing import NamedTuple, Any, ClassVar, Mapping
 from frozendict import frozendict
 from autoroutes import Routes as Autoroutes
@@ -7,13 +7,13 @@ from autorouting.matchers import Matcher
 
 
 class ImmutabilityError(Exception):
-    pass
+    ...
 
 
 class Routes(Autoroutes):
 
     def __init__(self):
-        self._byname: dict[str, RouteURL] = {}
+        self.by_name: dict[str, RouteURL] = {}
         super().__init__()
 
 
@@ -56,7 +56,7 @@ class RouteGroup(dict[str, list[Route]]):
 
 class Router(dict[str, RouteGroup]):
 
-    allowed_namespaces: ClassVar[Iterable | None] = None
+    allowed_namespaces: ClassVar[Collection | None] = None
 
     def __init__(self, *args, **kwargs):
         self._names = set()
@@ -74,7 +74,7 @@ class Router(dict[str, RouteGroup]):
         if self._routes is not None:
             raise ImmutabilityError('Router is already finalized.')
 
-        if (self.allowed_namespaces and
+        if (self.allowed_namespaces is not None and
             namespace not in self.allowed_namespaces):
             raise ValueError(
                 f"Unknown namespace: {namespace}. "
@@ -149,7 +149,7 @@ class Router(dict[str, RouteGroup]):
     def get_by_name(self, name: str) -> RouteURL | None:
         if self._routes is None:
             raise NotImplementedError('Router was not finalized.')
-        return self._routes._byname.get(name)
+        return self._routes.by_name.get(name)
 
     def finalize(self):
         if self._routes is not None:
@@ -157,7 +157,7 @@ class Router(dict[str, RouteGroup]):
         self._routes = Routes()
         for path, group in self.items():
             if group.name:
-                self._routes._byname[group.name] = RouteURL.from_path(path)
+                self._routes.by_name[group.name] = RouteURL.from_path(path)
             self._routes.add(
                 path, **{
                     namespace: tuple(routes)
