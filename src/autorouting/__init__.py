@@ -85,7 +85,9 @@ class Router(dict[str, RouteGroup]):
         if path not in self:
             if name:
                 if name in self._names:
-                    raise NameError(f"Name {name!r} is already in use.")
+                    raise NameError(
+                        f"Route {route} conflict: "
+                        f"name {name!r} is already in use. ")
                 self._names.add(name)
             group = self[path] = RouteGroup(name)
             group.add(namespace, route)
