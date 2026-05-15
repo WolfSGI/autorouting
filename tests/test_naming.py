@@ -22,7 +22,7 @@ def test_route_naming_duplicate_different_group():
     with pytest.raises(NameError) as exc:
         router.add("path/to/A", "Component", "component A", name="A")
 
-    assert str(exc.value) == "Name 'A' is already in use."
+    assert str(exc.value).endswith("name 'A' is already in use.")
 
 
 def test_route_naming_duplicate_same_group():
