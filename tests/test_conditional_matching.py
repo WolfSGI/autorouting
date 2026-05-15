@@ -17,10 +17,6 @@ router.add("path/to/{var}", 'GET', 'component B',
 
 router.add("path/to/{var}", 'GET', 'component C')
 
-router.finalize()
-
-
-
 
 def test_matching():
     found = list(

@@ -8,11 +8,6 @@ from hamcrest import equal_to
 def test_route_naming():
     router = Router()
     router.add("path/to/{var:digit}", "Component", "component A", name="A")
-
-    with pytest.raises(NotImplementedError):
-        router.get_by_name('A')
-
-    router.finalize()
     url = router.get_by_name('A')
     assert url == RouteURL(
         url='path/to/{var}',
@@ -38,7 +33,6 @@ def test_route_naming_duplicate_same_group():
     router.add(
         "path/to/{var:digit}", "Component", "component B", name="A")
 
-    router.finalize()
     url = router.get_by_name('A')
     assert url == RouteURL(
         url='path/to/{var}',

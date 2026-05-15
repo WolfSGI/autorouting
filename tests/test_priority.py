@@ -7,7 +7,6 @@ def test_no_priority():
     router.add('/whatever', 'GET', 'Component 1')
     router.add('/whatever', 'GET', 'Component 2')
 
-    router.finalize()
     route = router.get("/whatever", "GET")
     assert route == MatchedRoute(
         path='/whatever',
@@ -39,7 +38,6 @@ def test_priority():
     router.add('/whatever', 'GET', 'Component 2', priority=1)
     router.add('/whatever', 'GET', 'Component 3')
 
-    router.finalize()
     route = router.get("/whatever", "GET")
     assert route == MatchedRoute(
         path='/whatever',
@@ -77,7 +75,6 @@ def test_competing_priority():
     router.add('/whatever', 'GET', 'Component 2', priority=1)
     router.add('/whatever', 'GET', 'Component 3', priority=99)
 
-    router.finalize()
     route = router.get("/whatever", "GET")
     assert route == MatchedRoute(
         path='/whatever',

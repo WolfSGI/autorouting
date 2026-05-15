@@ -60,7 +60,7 @@ class Router(dict[str, RouteGroup]):
 
     def __init__(self, *args, **kwargs):
         self._names = set()
-        self._routes = None
+        self._routes = Routes()
         super().__init__(*args, **kwargs)
 
     def add(self,
@@ -70,9 +70,6 @@ class Router(dict[str, RouteGroup]):
             name: str | None = None,
             requirements: dict | None = None,
             priority: int = 0):
-
-        if self._routes is not None:
-            raise ImmutabilityError('Router is already finalized.')
 
         if (self.allowed_namespaces is not None and
             namespace not in self.allowed_namespaces):
@@ -92,6 +89,9 @@ class Router(dict[str, RouteGroup]):
                 self._names.add(name)
             group = self[path] = RouteGroup(name)
             group.add(namespace, route)
+            self._routes.add(
+                path, **{namespace: group[namespace]}
+            )
         else:
             if self[path].name is None:
                 if name:
@@ -105,6 +105,11 @@ class Router(dict[str, RouteGroup]):
                     f'belongs to a group named {self[path].name!r}.'
                 )
             self[path].add(namespace, route)
+            self._routes.add(
+                path, **{namespace: self[path][namespace]}
+            )
+
+        self._routes.by_name[name] = RouteURL.from_path(path)
         return route
 
     def match(self, path: str, namespace: str, extra: dict | None = None):
@@ -151,22 +156,6 @@ class Router(dict[str, RouteGroup]):
             raise NotImplementedError('Router was not finalized.')
         return self._routes.by_name.get(name)
 
-    def finalize(self):
-        if self._routes is not None:
-            return
-        self._routes = Routes()
-        for path, group in self.items():
-            if group.name:
-                self._routes.by_name[group.name] = RouteURL.from_path(path)
-            self._routes.add(
-                path, **{
-                    namespace: tuple(routes)
-                    for namespace, routes in group.items()
-                    if (not self.allowed_namespaces or
-                        namespace in self.allowed_namespaces)
-                }
-            )
-
     def __or__(self, other) -> 'Router':
         router = self.__class__()
         for merger in (self, other):
@@ -184,8 +173,6 @@ class Router(dict[str, RouteGroup]):
         return router
 
     def __ior__(self, other: 'Router') -> 'Router':
-        if self._routes is not None:
-            raise ImmutabilityError('Router is finalized.')
         for path, group in other.items():
             for namespace, routes in group.items():
                 for route in routes:

@@ -8,8 +8,6 @@ router.add("path/to/{var}", "GET", "component B")
 router.add("download/{name:path}", "GET", "component C")
 router.add("/path", "GET", "component D")
 
-router.finalize()
-
 
 def test_route_matching():
     assert router.get("path/to/1", "GET") == (
