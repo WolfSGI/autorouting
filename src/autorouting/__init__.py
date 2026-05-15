@@ -1,8 +1,9 @@
-from autoroutes import Routes as Autoroutes
 from collections.abc import Iterable
-from typing import NamedTuple, Any, ClassVar
-from autorouting.url import RouteURL
+from typing import NamedTuple, Any, ClassVar, Mapping
 from frozendict import frozendict
+from autoroutes import Routes as Autoroutes
+from autorouting.url import RouteURL
+from autorouting.matchers import Matcher
 
 
 class ImmutabilityError(Exception):
@@ -18,7 +19,7 @@ class Routes(Autoroutes):
 
 class Route(NamedTuple):
     component: Any
-    requirements: frozendict
+    requirements: Mapping[str, Matcher]
     priority: int = 0
 
 
